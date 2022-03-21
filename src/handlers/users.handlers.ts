@@ -1,10 +1,7 @@
 import express, { Request, Response } from "express";
-import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import verifyAuthToken from "../middleware/verifyAuthToken";
 import { User, UserStore } from "../models/user.models";
-
-dotenv.config();
 
 const store = new UserStore();
 
@@ -23,13 +20,13 @@ const create = async (req: Request, res: Response) => {
     first_name: req.body.first_name,
     last_name: req.body.last_name,
     username: req.body.username,
-    password_digest: req.body.password_digest,
+    password: req.body.password,
     phone: req.body.phone,
     about: req.body.about,
   };
   try {
     const newUser = await store.create(user);
-    var token = jwt.sign({ user: newUser }, process.env.TOKEN_SECRET);
+    var token = jwt.sign({ user: newUser }, process.env.TOKEN_SECRET as string);
     res.json(token);
   } catch (err) {
     res.status(400);
@@ -43,15 +40,15 @@ const update = async (req: Request, res: Response) => {
     first_name: req.body.first_name,
     last_name: req.body.last_name,
     username: req.body.username,
-    password_digest: req.body.password_digest,
+    password: req.body.password,
     phone: req.body.phone,
     about: req.body.about,
   };
   try {
-    const authorizationHeader = req.headers.authorization;
+    const authorizationHeader: string = req.headers.authorization!;
     const token = authorizationHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    if (decoded.id !== user.id) {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET as string);
+    if (decoded !== user.id) {
       throw new Error("User id does not match!");
     }
   } catch (err) {
@@ -59,10 +56,10 @@ const update = async (req: Request, res: Response) => {
     res.json(err);
     return;
   }
-  
+
   try {
     const newUser = await store.update(user);
-    var token = jwt.sign({ user: newUser }, process.env.TOKEN_SECRET);
+    var token = jwt.sign({ user: newUser }, process.env.TOKEN_SECRET as string);
     res.json(token);
   } catch (err) {
     res.status(400);
@@ -78,15 +75,15 @@ const destroy = async (req: Request, res: Response) => {
 const authenticate = async (req: Request, res: Response) => {
   const user: User = {
     username: req.body.username,
-    password_digest: req.body.password_digest,
+    password: req.body.password,
     first_name: "",
     last_name: "",
     phone: 0,
     about: "",
   };
   try {
-    const u = await store.authenticate(user.username, user.password_digest);
-    var token = jwt.sign({ user: u }, process.env.TOKEN_SECRET);
+    const u = await store.authenticate(user.username, user.password);
+    var token = jwt.sign({ user: u }, process.env.TOKEN_SECRET as string);
     res.json(token);
   } catch (error) {
     res.status(401);
@@ -97,7 +94,7 @@ const authenticate = async (req: Request, res: Response) => {
 const userRoutes = (app: express.Application) => {
   app.get("users", index);
   app.get("/users/:id", show);
-  app.post("/users/:id", verifyAuthToken, create);
+  app.post("/users", verifyAuthToken, create);
   app.put("/users/:id", verifyAuthToken, update);
   app.delete("/users/:id", verifyAuthToken, destroy);
 };

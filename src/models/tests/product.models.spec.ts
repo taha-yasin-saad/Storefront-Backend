@@ -1,23 +1,19 @@
-import { Book, BookStore } from "../book.models";
+import { Product, ProductStore } from "../product.models";
 
-const store = new BookStore();
+const store = new ProductStore();
 
-describe("Book Model", () => {
-  let b: Book = {
-    title: "Promise",
-    author: "Alen Walker",
-    total_pages: 150,
-    summary:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    type: "hi",
+describe("Product Model", () => {
+  let b: Product = {
+    name: "Promise",
+    price: 150,
   };
-
+  
   describe("The create method", () => {
     it("should have an create method", () => {
       expect(store.create).toBeDefined();
     });
 
-    it("create method should return a book", async () => {
+    it("create method should return a product", async () => {
       const result = await store.create(b);
       expect(result).toEqual(b);
     });
@@ -28,7 +24,7 @@ describe("Book Model", () => {
       expect(store.index).toBeDefined();
     });
 
-    it("index method should return a list of books", async () => {
+    it("index method should return a list of products", async () => {
       const result = await store.index();
       expect(result).toEqual([b]);
     });
@@ -39,7 +35,7 @@ describe("Book Model", () => {
       expect(store.show).toBeDefined();
     });
 
-    it("show method should return a one book", async () => {
+    it("show method should return a one product", async () => {
       const result = await store.show("1");
       expect(result).toEqual(b);
     });
@@ -50,7 +46,7 @@ describe("Book Model", () => {
       expect(store.delete).toBeDefined();
     });
 
-    it("delete method should delete a book", async () => {
+    it("delete method should delete a product", async () => {
       await store.delete("1");
       const result = await store.index();
       expect(result).toEqual([]);

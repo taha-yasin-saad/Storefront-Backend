@@ -1,4 +1,4 @@
-import client from "../database";
+import Client from "../database";
 import bcrypt from "bcrypt";
 
 export type User = {
@@ -6,7 +6,7 @@ export type User = {
   first_name: string;
   last_name: string;
   username: string;
-  password_digest: number;
+  password: string;
   phone: number;
   about: string;
 };
@@ -14,7 +14,7 @@ export type User = {
 export class UserStore {
   async index(): Promise<User[]> {
     try {
-      const conn = await client.connect();
+      const conn = await Client.connect();
       const sql = "SELECT * FROM users";
       const result = await conn.query(sql);
       conn.release();
@@ -28,7 +28,7 @@ export class UserStore {
   async show(id: string): Promise<User> {
     try {
       const sql = "SELECT * FROM users WHERE id=($1)";
-      const conn = await client.connect();
+      const conn = await Client.connect();
       const result = await conn.query(sql, [id]);
       conn.release();
 
@@ -40,12 +40,12 @@ export class UserStore {
 
   async create(u: User): Promise<User> {
     try {
-      const conn = await client.connect();
+      const conn = await Client.connect();
       const sql =
-        "INSERT INTO users (first_name, last_name, username, password_digest, phone, about) VALUES($1, $2 ,$3 , $4, $5, $6) RETURNING *";
+        "INSERT INTO users (first_name, last_name, username, password, phone, about) VALUES($1, $2 ,$3 , $4, $5, $6) RETURNING *";
       const hash = bcrypt.hashSync(
-        u.password_digest + pepper,
-        parseInt(saltRounds)
+        (u.password + process.env.BYCRYPT_PASSWORD) as string,
+        parseInt(process.env.SALT_ROUNDS as string)
       );
       const result = await conn.query(sql, [
         u.first_name,
@@ -68,12 +68,12 @@ export class UserStore {
 
   async update(u: User): Promise<User> {
     try {
-      const conn = await client.connect();
+      const conn = await Client.connect();
       const sql =
-        "UPDATE users SET first_name = $1, last_name = $2, username = $3, password_digest = $4, phone = $5, about = $6 WHERE id = $7 RETURNING *";
+        "UPDATE users SET first_name = $1, last_name = $2, username = $3, password = $4, phone = $5, about = $6 WHERE id = $7 RETURNING *";
       const hash = bcrypt.hashSync(
-        u.password_digest + pepper,
-        parseInt(saltRounds)
+        u.password + process.env.BYCRYPT_PASSWORD,
+        parseInt(process.env.SALT_ROUNDS as string)
       );
       const result = await conn.query(sql, [
         u.first_name,
@@ -98,7 +98,7 @@ export class UserStore {
   async delete(id: string): Promise<User> {
     try {
       const sql = "DELETE FROM users WHERE id=($1)";
-      const conn = await client.connect();
+      const conn = await Client.connect();
       const result = await conn.query(sql, [id]);
 
       const user = result.rows[0];
@@ -112,19 +112,24 @@ export class UserStore {
   }
 
   async authenticate(username: string, password: string): Promise<User | null> {
-    const conn = await client.connect();
-    const sql = "SELECT password_digest FROM users WHERE username=($1)";
+    const conn = await Client.connect();
+    const sql = "SELECT password FROM users WHERE username=($1)";
 
     const result = await conn.query(sql, [username]);
 
-    console.log(password + pepper);
+    console.log(password + process.env.BYCRYPT_PASSWORD);
 
     if (result.rows.length) {
       const user = result.rows[0];
 
       console.log(user);
 
-      if (bcrypt.compareSync(password + pepper, user.password_digest)) {
+      if (
+        bcrypt.compareSync(
+          password + process.env.BYCRYPT_PASSWORD,
+          user.password
+        )
+      ) {
         return user;
       }
     }
